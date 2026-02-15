@@ -1,0 +1,44 @@
+{
+  "name": "@faizkhairi/loadtest-cli",
+  "version": "1.0.0",
+  "description": "CLI tool to benchmark HTTP endpoints with concurrent requests, latency percentiles, and HTML reports",
+  "type": "module",
+  "bin": {
+    "loadtest": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "load-testing",
+    "benchmark",
+    "http",
+    "cli",
+    "performance",
+    "api-testing",
+    "latency"
+  ],
+  "author": "faizkhairi",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
+    "commander": "^14.0.3",
+    "ora": "^9.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
