@@ -1,6 +1,6 @@
 {
   "name": "@faizkhairi/loadtest-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CLI tool to benchmark HTTP endpoints with concurrent requests, latency percentiles, and HTML reports",
   "type": "module",
   "bin": {
@@ -26,8 +26,7 @@
   "author": "faizkhairi",
   "license": "MIT",
   "files": [
-    "dist",
-    "templates"
+    "dist"
   ],
   "dependencies": {
     "chalk": "^5.6.2",
