@@ -3,18 +3,24 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { runLoadTest } from './runner.js';
 import { printTerminalReport } from './reporter/terminal.js';
 import { formatJsonReport } from './reporter/json.js';
 import { writeHtmlReport } from './reporter/html.js';
 import type { OutputFormat } from './types.js';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8')) as { version: string };
+
 const program = new Command();
 
 program
   .name('loadtest')
   .description('Benchmark HTTP endpoints with concurrent requests')
-  .version('1.0.0')
+  .version(pkg.version)
   .argument('<url>', 'Target URL to test')
   .option('-n, --requests <number>', 'Total number of requests', '100')
   .option('-c, --concurrency <number>', 'Concurrent connections', '10')
