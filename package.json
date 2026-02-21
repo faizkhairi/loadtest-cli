@@ -4,7 +4,7 @@
   "description": "CLI tool to benchmark HTTP endpoints with concurrent requests, latency percentiles, and HTML reports",
   "type": "module",
   "bin": {
-    "loadtest": "./dist/index.js"
+    "loadtest": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
