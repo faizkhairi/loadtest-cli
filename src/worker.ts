@@ -28,15 +28,35 @@ export async function sendRequest(
       }
     }
 
-    // Add Content-Type for JSON bodies
-    if (body) {
-      headers = { 'Content-Type': 'application/json', ...headers };
+    // Feature 7: Multipart file upload — or JSON body
+    let fetchBody: string | FormData | undefined;
+
+    if (options.file) {
+      const form = new FormData();
+      const file = new File([new Uint8Array(options.file)], options.fileName || 'file');
+      form.append(options.fileField || 'file', file);
+      if (options.formFields) {
+        for (const [key, val] of Object.entries(options.formFields)) {
+          let value = val;
+          if (context?.setupResponse != null) {
+            value = interpolateSetupResponse(value, context.setupResponse);
+          }
+          form.append(key, value);
+        }
+      }
+      fetchBody = form;
+      // Do NOT set Content-Type — fetch auto-sets multipart/form-data with boundary
+    } else {
+      if (body) {
+        headers = { 'Content-Type': 'application/json', ...headers };
+      }
+      fetchBody = body || undefined;
     }
 
     const res = await fetch(options.url, {
       method: options.method,
       headers,
-      body: body || undefined,
+      body: fetchBody,
       signal: controller.signal,
       redirect: 'follow',
     });

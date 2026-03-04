@@ -107,3 +107,44 @@ describe('runLoadTest — assertions (Feature 4)', () => {
     expect(stats.failedRequests).toBe(0); // no network errors
   });
 });
+
+describe('runLoadTest — ramp-up (Feature 6)', () => {
+  it('spawns additional workers over time', async () => {
+    let activeFetches = 0;
+    let peakConcurrency = 0;
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async () => {
+        activeFetches++;
+        peakConcurrency = Math.max(peakConcurrency, activeFetches);
+        await new Promise((r) => setTimeout(r, 50));
+        activeFetches--;
+        return new Response('{"ok":true}', { status: 200 });
+      })
+    );
+
+    const stats = await runLoadTest({
+      ...baseOptions,
+      duration: 2,
+      requests: Infinity,
+      concurrency: 2,
+      rampTo: 10,
+      rampOver: 1,
+    });
+
+    expect(stats.totalRequests).toBeGreaterThan(0);
+    expect(peakConcurrency).toBeGreaterThan(2);
+  });
+
+  it('completes all requests in requests mode with ramp-up', async () => {
+    const stats = await runLoadTest({
+      ...baseOptions,
+      requests: 20,
+      concurrency: 2,
+      rampTo: 5,
+      rampOver: 1,
+    });
+    expect(stats.totalRequests).toBe(20);
+  });
+});

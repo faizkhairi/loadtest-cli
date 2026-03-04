@@ -24,6 +24,14 @@ export interface LoadTestOptions {
   assertBody?: string;
   // Feature 5: Setup phase
   setup?: SetupOptions;
+  // Feature 6: Ramp-up patterns
+  rampTo?: number;
+  rampOver?: number;
+  // Feature 7: Multipart file upload
+  file?: Buffer;
+  fileName?: string;
+  fileField?: string;
+  formFields?: Record<string, string>;
 }
 
 export interface RequestResult {

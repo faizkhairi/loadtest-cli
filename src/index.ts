@@ -39,6 +39,12 @@ program
   .option('--setup <url>', 'Setup URL — fire once before test, response available as {{SETUP_RESPONSE}}')
   .option('--setup-method <method>', 'HTTP method for setup request', 'POST')
   .option('--setup-body <body>', 'Request body for setup request (JSON string)')
+  // v2.1.0 options
+  .option('--ramp-to <number>', 'Target concurrency for ramp-up (starts from -c)')
+  .option('--ramp-over <seconds>', 'Seconds to ramp from -c to --ramp-to')
+  .option('--file <path>', 'File to upload (multipart/form-data)')
+  .option('--file-field <name>', 'Form field name for the file', 'file')
+  .option('--form <fields...>', 'Additional form fields (key:value, requires --file)')
   .action(async (url: string, opts) => {
     // Parse headers
     const headers: Record<string, string> = {};
@@ -54,6 +60,30 @@ program
     const hasRequests = opts.requests !== '100' || !hasDuration; // default is '100'
     if (hasDuration && opts.requests !== '100') {
       console.error(chalk.red('  Error: -n and -d are mutually exclusive. Use one or the other.'));
+      process.exit(1);
+    }
+
+    // Validate ramp-up options
+    if (opts.rampTo && !opts.rampOver) {
+      console.error(chalk.red('  Error: --ramp-over is required when --ramp-to is provided.'));
+      process.exit(1);
+    }
+    if (opts.rampOver && !opts.rampTo) {
+      console.error(chalk.red('  Error: --ramp-to is required when --ramp-over is provided.'));
+      process.exit(1);
+    }
+    if (opts.rampTo && parseInt(opts.rampTo, 10) <= parseInt(opts.concurrency, 10)) {
+      console.error(chalk.red('  Error: --ramp-to must be greater than -c (starting concurrency).'));
+      process.exit(1);
+    }
+
+    // Validate file upload mutual exclusivity
+    if (opts.file && (opts.body || opts.payloadFile)) {
+      console.error(chalk.red('  Error: --file is mutually exclusive with --body and --payload-file.'));
+      process.exit(1);
+    }
+    if (opts.form && !opts.file) {
+      console.error(chalk.red('  Error: --form requires --file (form fields are only used in multipart mode).'));
       process.exit(1);
     }
 
@@ -77,6 +107,9 @@ program
             body: opts.setupBody,
           }
         : undefined,
+      rampTo: opts.rampTo ? parseInt(opts.rampTo, 10) : undefined,
+      rampOver: opts.rampOver ? parseFloat(opts.rampOver) : undefined,
+      fileField: opts.fileField,
     };
 
     // Load payload file
@@ -93,6 +126,27 @@ program
       } catch (err) {
         console.error(chalk.red(`  Error reading payload file: ${(err as Error).message}`));
         process.exit(1);
+      }
+    }
+
+    // Load file for multipart upload
+    if (opts.file) {
+      try {
+        const filePath = resolve(opts.file);
+        options.file = readFileSync(filePath);
+        options.fileName = filePath.split(/[\\/]/).pop();
+      } catch (err) {
+        console.error(chalk.red(`  Error reading file: ${(err as Error).message}`));
+        process.exit(1);
+      }
+    }
+
+    // Parse form fields
+    if (opts.form) {
+      options.formFields = {};
+      for (const f of opts.form as string[]) {
+        const [key, ...rest] = f.split(':');
+        options.formFields[key.trim()] = rest.join(':').trim();
       }
     }
 
@@ -116,8 +170,12 @@ program
       ? `${options.duration}s duration`
       : `${options.requests} requests`;
     const rpsLabel = options.rps ? `, ${options.rps} rps cap` : '';
+    const rampLabel = options.rampTo
+      ? `, ramp ${options.concurrency} -> ${options.rampTo} over ${options.rampOver}s`
+      : '';
+    const fileLabel = options.file ? `, file upload (${options.fileName})` : '';
     console.log(
-      chalk.dim(`  ${modeLabel}, ${options.concurrency} concurrent, ${options.method}${rpsLabel}`)
+      chalk.dim(`  ${modeLabel}, ${options.concurrency} concurrent, ${options.method}${rpsLabel}${rampLabel}${fileLabel}`)
     );
 
     const testStart = Date.now();

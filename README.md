@@ -10,6 +10,8 @@ A fast CLI tool to benchmark HTTP endpoints with concurrent requests, latency pe
 - **Payload templates** -- Vary request bodies using a JSON file (round-robin)
 - **Response assertions** -- Validate status codes and response body content
 - **Setup phase** -- Login or authenticate before running the load test
+- **Ramp-up patterns** -- Gradually increase concurrency over time
+- **File upload** -- Multipart/form-data uploads for stress-testing upload endpoints
 - **Latency percentiles** -- p50, p95, p99, min, max, mean
 - **Status code breakdown** -- 2xx/3xx/4xx/5xx distribution
 - **Progress bar** -- Real-time progress with spinner
@@ -49,6 +51,16 @@ loadtest https://api.example.com/data \
   --setup-body '{"user":"admin","pass":"secret"}' \
   -H "Authorization:Bearer {{SETUP_RESPONSE.token}}"
 
+# Ramp up from 10 to 100 workers over 30 seconds
+loadtest https://api.example.com/health -d 120 -c 10 --ramp-to 100 --ramp-over 30
+
+# Upload a file
+loadtest https://api.example.com/upload -m POST --file ./data.csv -n 50
+
+# File upload with custom field name and extra form data
+loadtest https://api.example.com/upload -m POST --file ./data.csv \
+  --file-field "document" --form "userId:123" --form "batch:A" -n 50
+
 # Custom headers + save HTML report
 loadtest https://api.example.com/data \
   -H "Authorization:Bearer token123" \
@@ -74,6 +86,11 @@ loadtest https://api.example.com/data \
 | `--setup <url>` | Setup URL (fires once before test) | -- |
 | `--setup-method <method>` | HTTP method for setup request | POST |
 | `--setup-body <body>` | Request body for setup request | -- |
+| `--ramp-to <number>` | Target concurrency for ramp-up | -- |
+| `--ramp-over <seconds>` | Seconds to ramp from -c to --ramp-to | -- |
+| `--file <path>` | File to upload (multipart/form-data) | -- |
+| `--file-field <name>` | Form field name for the file | file |
+| `--form <fields...>` | Additional form fields (key:value) | -- |
 
 ## Payload File Format
 
@@ -96,6 +113,35 @@ The `--setup` option fires a single HTTP request before the load test begins. Th
 - `{{SETUP_RESPONSE.data.token}}` -- Nested field access
 
 This enables login-then-test workflows where you need an auth token.
+
+## Ramp-Up Patterns
+
+Use `--ramp-to` and `--ramp-over` to gradually increase concurrency. The `-c` flag sets the starting concurrency, and workers are added incrementally until the target is reached:
+
+```bash
+# Start with 10 workers, ramp to 100 over 30 seconds
+loadtest https://api.example.com -d 120 -c 10 --ramp-to 100 --ramp-over 30
+```
+
+Both flags are required together. `--ramp-to` must be greater than `-c`. Ramp-up works with both duration mode (`-d`) and request count mode (`-n`).
+
+## File Upload
+
+Use `--file` to send multipart/form-data requests for stress-testing upload endpoints:
+
+```bash
+# Basic file upload
+loadtest https://api.example.com/upload -m POST --file ./data.csv -n 100
+
+# Custom field name + extra form fields
+loadtest https://api.example.com/upload -m POST \
+  --file ./report.pdf --file-field "document" \
+  --form "userId:123" --form "category:reports" -n 50
+```
+
+- `--file` is mutually exclusive with `--body` and `--payload-file`
+- `--form` fields support `{{SETUP_RESPONSE.key}}` interpolation
+- The file is read once at startup and reused across all requests
 
 ## Output Example
 

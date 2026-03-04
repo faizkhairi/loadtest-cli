@@ -96,3 +96,73 @@ describe('sendRequest — setup interpolation (Feature 5)', () => {
     expect(call[1].body).toContain('{"x":1}');
   });
 });
+
+describe('sendRequest — multipart file upload (Feature 7)', () => {
+  it('sends FormData with file when options.file is set', async () => {
+    const opts: LoadTestOptions = {
+      ...baseOptions,
+      method: 'POST',
+      file: Buffer.from('col1,col2\nval1,val2'),
+      fileName: 'data.csv',
+      fileField: 'document',
+    };
+    const result = await sendRequest(opts, { index: 0 });
+    expect(result.status).toBe(200);
+    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[1].body).toBeInstanceOf(FormData);
+    expect((call[1].body as FormData).has('document')).toBe(true);
+  });
+
+  it('uses default field name "file" when fileField not specified', async () => {
+    const opts: LoadTestOptions = {
+      ...baseOptions,
+      method: 'POST',
+      file: Buffer.from('test'),
+      fileName: 'test.txt',
+    };
+    await sendRequest(opts, { index: 0 });
+    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect((call[1].body as FormData).has('file')).toBe(true);
+  });
+
+  it('includes additional form fields', async () => {
+    const opts: LoadTestOptions = {
+      ...baseOptions,
+      method: 'POST',
+      file: Buffer.from('test'),
+      fileName: 'test.txt',
+      formFields: { userId: '123', batch: 'A' },
+    };
+    await sendRequest(opts, { index: 0 });
+    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    const body = call[1].body as FormData;
+    expect(body.get('userId')).toBe('123');
+    expect(body.get('batch')).toBe('A');
+  });
+
+  it('interpolates setup response in form field values', async () => {
+    const opts: LoadTestOptions = {
+      ...baseOptions,
+      method: 'POST',
+      file: Buffer.from('test'),
+      fileName: 'test.txt',
+      formFields: { auth: '{{SETUP_RESPONSE.token}}' },
+    };
+    await sendRequest(opts, { index: 0, setupResponse: { token: 'xyz' } });
+    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    const body = call[1].body as FormData;
+    expect(body.get('auth')).toBe('xyz');
+  });
+
+  it('does NOT set Content-Type header for multipart', async () => {
+    const opts: LoadTestOptions = {
+      ...baseOptions,
+      method: 'POST',
+      file: Buffer.from('test'),
+      fileName: 'test.txt',
+    };
+    await sendRequest(opts, { index: 0 });
+    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[1].headers['Content-Type']).toBeUndefined();
+  });
+});
