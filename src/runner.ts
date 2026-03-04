@@ -29,15 +29,14 @@ function waitForToken(bucket: TokenBucket): Promise<void> {
 }
 
 function refillBucket(bucket: TokenBucket): void {
-  const available = Math.min(bucket.max, bucket.max - bucket.tokens + bucket.waiters.length);
-  // Release waiting workers first
-  while (bucket.waiters.length > 0 && available > 0) {
+  // Add new tokens for this cycle (capped at max)
+  bucket.tokens = Math.min(bucket.max, bucket.tokens + bucket.max);
+  // Release waiting workers, consuming one token each
+  while (bucket.waiters.length > 0 && bucket.tokens > 0) {
     const waiter = bucket.waiters.shift();
     waiter?.();
-    bucket.tokens = Math.max(0, bucket.tokens - 1);
+    bucket.tokens--;
   }
-  // Refill remaining tokens
-  bucket.tokens = Math.min(bucket.max, bucket.tokens + bucket.max);
 }
 
 // ── Main Runner ───────────────────────────────────────

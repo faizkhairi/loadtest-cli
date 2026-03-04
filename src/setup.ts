@@ -1,7 +1,7 @@
 import type { SetupOptions } from './types.js';
 
 export async function runSetup(options: SetupOptions): Promise<unknown> {
-  const { url, method = 'GET', headers = {}, body } = options;
+  const { url, method = 'POST', headers = {}, body } = options;
 
   const res = await fetch(url, {
     method,
