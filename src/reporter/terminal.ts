@@ -27,6 +27,12 @@ export function printTerminalReport(stats: LoadTestStats, url: string): void {
     ['Requests/sec', chalk.yellow(stats.requestsPerSecond.toFixed(1))],
   );
 
+  if (stats.assertionFailures > 0) {
+    summary.push(
+      ['Assertion Failures', chalk.red(stats.assertionFailures.toString())],
+    );
+  }
+
   console.log(summary.toString());
   console.log();
 

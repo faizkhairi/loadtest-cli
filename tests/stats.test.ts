@@ -43,6 +43,7 @@ describe('calculateStats', () => {
     expect(stats.totalRequests).toBe(5);
     expect(stats.successfulRequests).toBe(5);
     expect(stats.failedRequests).toBe(0);
+    expect(stats.assertionFailures).toBe(0);
     expect(stats.totalDuration).toBe(1000);
     expect(stats.requestsPerSecond).toBe(5);
     expect(stats.latency.min).toBe(10);

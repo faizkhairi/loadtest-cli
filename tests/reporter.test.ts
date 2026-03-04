@@ -6,6 +6,7 @@ const mockStats: LoadTestStats = {
   totalRequests: 100,
   successfulRequests: 95,
   failedRequests: 5,
+  assertionFailures: 0,
   totalDuration: 2000,
   requestsPerSecond: 50,
   latency: { min: 5, max: 500, mean: 100, p50: 80, p95: 350, p99: 480 },

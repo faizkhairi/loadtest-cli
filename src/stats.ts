@@ -13,10 +13,14 @@ export function calculateStats(
     statusCodes[r.status] = (statusCodes[r.status] || 0) + 1;
   }
 
+  // Assertion failures are counted separately from HTTP failures
+  const assertionFailures = results.filter((r) => r.assertionFailed).length;
+
   return {
     totalRequests: results.length,
     successfulRequests: successful.length,
     failedRequests: failed.length,
+    assertionFailures,
     totalDuration,
     requestsPerSecond:
       totalDuration > 0 ? results.length / (totalDuration / 1000) : 0,

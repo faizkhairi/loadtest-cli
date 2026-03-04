@@ -1,6 +1,6 @@
 {
   "name": "@faizkhairi/loadtest-cli",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "CLI tool to benchmark HTTP endpoints with concurrent requests, latency percentiles, and HTML reports",
   "type": "module",
   "bin": {

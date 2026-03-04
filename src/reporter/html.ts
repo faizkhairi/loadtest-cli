@@ -79,6 +79,9 @@ function getInlineTemplate(): string {
       { label: 'Req/sec', value: data.requestsPerSecond.toFixed(1) },
       { label: 'Mean Latency', value: data.latency.mean.toFixed(1) + 'ms' },
     ];
+    if (data.assertionFailures > 0) {
+      cards.push({ label: 'Assertion Failures', value: data.assertionFailures });
+    }
     cards.forEach(c => {
       summary.innerHTML += '<div class="card"><p class="card-label">' + c.label + '</p><p class="card-value">' + c.value + '</p></div>';
     });
