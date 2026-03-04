@@ -63,8 +63,8 @@ export async function runLoadTest(
     bucketTimer = setInterval(() => refillBucket(bucket!), 1000);
   }
 
-  // Create a pool of concurrent workers
-  const queue: Promise<void>[] = [];
+  // All worker promises (initial + ramp) in a single pool
+  const allWorkers: Promise<void>[] = [];
   let nextRequest = 0;
 
   async function worker() {
@@ -104,43 +104,42 @@ export async function runLoadTest(
     }
   }
 
-  // Launch concurrent workers
+  // Launch initial concurrent workers
   const workerCount = isDuration
     ? options.concurrency
     : Math.min(options.concurrency, options.requests);
 
   for (let i = 0; i < workerCount; i++) {
-    queue.push(worker());
+    allWorkers.push(worker());
   }
 
   // Feature 6: Ramp-up — gradually add workers from concurrency to rampTo
-  let rampTimer: ReturnType<typeof setInterval> | undefined;
-  const rampWorkers: Promise<void>[] = [];
+  // Wraps the timer in a promise that resolves when ramping completes naturally
+  let rampComplete: Promise<void> = Promise.resolve();
 
   if (options.rampTo && options.rampOver) {
     const additionalWorkers = options.rampTo - options.concurrency;
     const intervalMs = (options.rampOver * 1000) / additionalWorkers;
-    let added = 0;
 
-    rampTimer = setInterval(() => {
-      if (added >= additionalWorkers) {
-        clearInterval(rampTimer);
-        return;
-      }
-      if (isDuration && Date.now() >= deadline) {
-        clearInterval(rampTimer);
-        return;
-      }
-      rampWorkers.push(worker());
-      added++;
-    }, intervalMs);
+    rampComplete = new Promise<void>((resolve) => {
+      let added = 0;
+      const timer = setInterval(() => {
+        if (added >= additionalWorkers
+          || (isDuration && Date.now() >= deadline)
+          || (!isDuration && nextRequest >= options.requests)) {
+          clearInterval(timer);
+          resolve();
+          return;
+        }
+        allWorkers.push(worker());
+        added++;
+      }, intervalMs);
+    });
   }
 
-  await Promise.all(queue);
-
-  // Wait for ramp-up workers that may still be running
-  if (rampTimer) clearInterval(rampTimer);
-  if (rampWorkers.length > 0) await Promise.all(rampWorkers);
+  // Wait for ramp-up to finish spawning, then for all workers to complete
+  await rampComplete;
+  await Promise.all(allWorkers);
 
   // Clean up RPS timer to prevent leaked setInterval
   if (bucketTimer) clearInterval(bucketTimer);
