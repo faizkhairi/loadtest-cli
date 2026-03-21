@@ -1,5 +1,8 @@
 # loadtest-cli
 
+![CI](https://github.com/faizkhairi/loadtest-cli/actions/workflows/ci.yml/badge.svg)
+![npm](https://img.shields.io/npm/v/@faizkhairi/loadtest-cli)
+
 A fast CLI tool to benchmark HTTP endpoints with concurrent requests, latency percentiles, and HTML reports.
 
 ## Features
