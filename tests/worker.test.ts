@@ -40,6 +40,35 @@ describe('sendRequest — basic', () => {
   });
 });
 
+describe('sendRequest: timeout timer cleanup', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('clears the timeout timer after a successful request', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('{"ok":true}', { status: 200 }))
+    );
+
+    await sendRequest(baseOptions);
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('clears the timeout timer after a failed request (regression: previously leaked)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNREFUSED')));
+
+    await sendRequest(baseOptions);
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
 describe('sendRequest — payload rotation (Feature 3)', () => {
   it('uses payload from array by index', async () => {
     const payloads = [{ name: 'Alice' }, { name: 'Bob' }];

@@ -6,10 +6,11 @@ export async function sendRequest(
   context?: RequestContext
 ): Promise<RequestResult> {
   const start = performance.now();
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), options.timeout);
+    timeoutId = setTimeout(() => controller.abort(), options.timeout);
 
     // Feature 3: Payload rotation — pick body from payloads array by index
     let body = options.body;
@@ -61,7 +62,6 @@ export async function sendRequest(
       redirect: 'follow',
     });
 
-    clearTimeout(timeoutId);
     // Consume body — captured for assertions
     const responseBody = await res.text();
 
@@ -91,5 +91,7 @@ export async function sendRequest(
       latency: performance.now() - start,
       error: (err as Error).message,
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
